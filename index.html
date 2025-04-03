@@ -4,82 +4,111 @@
   <meta charset="UTF-8">
   <title>Sourev | Simulador de Rentabilidade</title>
   <style>
+    :root {
+      --bg: #f9f9f9;
+      --text: #111;
+      --box: #e9ecef;
+      --primary: #1d3557;
+      --accent: #457b9d;
+    }
+    body.dark {
+      --bg: #121212;
+      --text: #fff;
+      --box: #1e1e1e;
+    }
     body {
       font-family: 'Segoe UI', sans-serif;
-      max-width: 650px;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 700px;
       margin: 30px auto;
-      background: #f9f9f9;
       padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
     }
     h1 {
       text-align: center;
-      color: #1d3557;
+      color: var(--primary);
     }
     label {
-      font-weight: bold;
       display: block;
       margin-top: 15px;
+      font-weight: bold;
     }
     input {
       width: 100%;
       padding: 8px;
       margin-top: 5px;
-      box-sizing: border-box;
     }
     button {
-      margin-top: 25px;
-      background: #457b9d;
+      background: var(--accent);
       color: white;
-      padding: 12px 20px;
+      padding: 12px;
+      margin-top: 20px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      width: 100%;
       font-size: 16px;
+      width: 100%;
     }
     button:hover {
-      background: #1d3557;
+      background: var(--primary);
     }
     #resultado {
       margin-top: 30px;
-      background: #e9ecef;
+      background: var(--box);
       padding: 20px;
       border-radius: 5px;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   </style>
 </head>
 <body>
-
-  <h1>Sourev | Simulador de Rentabilidade</h1>
+  <div class="top-bar">
+    <h1>Sourev | Simulador de Rentabilidade</h1>
+    <button onclick="toggleDarkMode()" style="width:auto; padding:5px 10px; font-size:14px;">🌓 Modo</button>
+  </div>
 
   <label>Valor Emprestado (R$):
-    <input type="number" id="pv" value="1000">
+    <input type="number" id="pv">
   </label>
 
   <label>Número de Parcelas:
-    <input type="number" id="n" value="3">
+    <input type="number" id="n">
   </label>
 
   <label>Valor da Parcela (R$):
-    <input type="number" id="pmt" value="333.33">
+    <input type="number" id="pmt">
   </label>
 
   <label>MDR (%):
-    <input type="number" id="mdr" value="20">
+    <input type="number" id="mdr">
   </label>
 
   <button onclick="calcular()">Calcular</button>
+  <button onclick="window.print()">📄 Exportar PDF</button>
 
   <div id="resultado"></div>
 
   <script>
+    // Ativar modo escuro
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+      localStorage.setItem("modo", document.body.classList.contains('dark') ? 'dark' : 'light');
+    }
+
+    if (localStorage.getItem("modo") === "dark") {
+      document.body.classList.add('dark');
+    }
+
+    // Calcular rentabilidade
     function getSplitFundo(mdr) {
       if (mdr === 15) return 0.50;
       if (mdr === 20) return 0.46;
       if (mdr === 25) return 0.45;
-      return 0.45; // padrão se valor diferente
+      return 0.45;
     }
 
     function calcular() {
@@ -90,11 +119,13 @@
 
       const split = getSplitFundo(mdr);
       const valorMDR = pv * (mdr / 100);
-      const entrada = pv - (valorMDR * split);
+      const valorFundo = valorMDR * split;
+      const entrada = pv - valorFundo;
 
       let fluxo = [-entrada];
       for (let i = 0; i < n; i++) fluxo.push(pmt);
 
+      // TIR
       let tir = 0.1;
       for (let i = 0; i < 1000; i++) {
         let f = 0, df = 0;
@@ -115,13 +146,28 @@
         : "<span style='color:orange'>⚠️ Abaixo da meta</span>";
 
       document.getElementById('resultado').innerHTML = `
-        <p><strong>Investimento líquido:</strong> R$ ${entrada.toFixed(2)}</p>
+        <p><strong>Investimento líquido do fundo:</strong> R$ ${entrada.toFixed(2)}</p>
+        <p><strong>Valor total recebido pelo fundo (via split MDR):</strong> R$ ${valorFundo.toFixed(2)}</p>
         <p><strong>Lucro da operação:</strong> R$ ${lucro.toFixed(2)}</p>
         <p><strong>TIR mensal:</strong> ${(tir * 100).toFixed(2)}%</p>
         <p><strong>Rentabilidade anual:</strong> ${(rentAnual * 100).toFixed(2)}%</p>
         <p><strong>Status:</strong> ${status}</p>
       `;
+
+      // salvar simulação
+      localStorage.setItem("simulador", JSON.stringify({ pv, n, pmt, mdr }));
+    }
+
+    // Restaurar última simulação
+    const dadosSalvos = localStorage.getItem("simulador");
+    if (dadosSalvos) {
+      const { pv, n, pmt, mdr } = JSON.parse(dadosSalvos);
+      document.getElementById('pv').value = pv;
+      document.getElementById('n').value = n;
+      document.getElementById('pmt').value = pmt;
+      document.getElementById('mdr').value = mdr;
     }
   </script>
 </body>
 </html>
+
