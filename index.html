@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Sourev | Simulador de Rentabilidade</title>
+  <title>Simulador de Rentabilidade - Investimento SOUREV</title>
   <style>
     :root {
       --bg: #f9f9f9;
@@ -37,6 +37,7 @@
       color: var(--primary);
       flex-grow: 1;
       text-align: center;
+      font-size: 20px;
       margin: 0;
     }
     label {
@@ -76,7 +77,7 @@
 
   <div class="top-bar">
     <img src="https://i.ibb.co/kBPr3v5/sourev-logo.png" alt="Sourev Logo" />
-    <h1>Simulador de Rentabilidade</h1>
+    <h1>Simulador de Rentabilidade<br>Investimento SOUREV</h1>
     <button onclick="toggleDarkMode()">🌓</button>
   </div>
 
@@ -174,10 +175,9 @@
       localStorage.setItem("simulador", JSON.stringify({ pv, n, pmt, mdr }));
     }
 
-    // Restaurar simulação anterior
     const dadosSalvos = localStorage.getItem("simulador");
     if (dadosSalvos) {
-      const { pv, n, pmt, mdr } = JSON.parse(dadosSalvos);
+      const { pv, n, mdr } = JSON.parse(dadosSalvos);
       document.getElementById("pv").value = pv;
       document.getElementById("n").value = n;
       document.getElementById("mdr").value = mdr;
@@ -186,5 +186,3 @@
   </script>
 </body>
 </html>
-
-
