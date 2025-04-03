@@ -46,12 +46,6 @@
       max-height: 120px;
     }
 
-    @media (max-width: 600px) {
-      .logo {
-        max-height: 80px;
-      }
-    }
-
     h1 {
       text-align: center;
       color: var(--primary);
@@ -93,6 +87,19 @@
       background: var(--box);
       padding: 20px;
       border-radius: 5px;
+    }
+
+    /* RESPONSIVO PARA CELULAR */
+    @media (max-width: 600px) {
+      .logo {
+        max-height: 80px;
+      }
+      body {
+        font-size: 18px;
+      }
+      h1 {
+        font-size: 22px;
+      }
     }
   </style>
 </head>
