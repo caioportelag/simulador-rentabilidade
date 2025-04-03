@@ -2,19 +2,18 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Simulador de Rentabilidade - Investimento SOUREV</title>
+  <title>Simulador de Rentabilidade - Fundo SOUREV</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg: #f9f9f9;
       --text: #111;
-      --box: #e9ecef;
       --primary: #1d3557;
       --accent: #457b9d;
     }
     body.dark {
       --bg: #121212;
       --text: #fff;
-      --box: #1e1e1e;
     }
     body {
       background: var(--bg);
@@ -23,7 +22,6 @@
       max-width: 720px;
       margin: 0 auto;
       padding: 20px;
-      position: relative;
     }
     .mode-toggle {
       position: absolute;
@@ -40,14 +38,13 @@
     }
     .logo {
       display: block;
-      margin: 0 auto 10px auto;
+      margin: 0 auto;
       max-height: 120px;
     }
     h1 {
       text-align: center;
       color: var(--primary);
-      font-size: 20px;
-      margin-top: 0;
+      font-size: 22px;
     }
     label {
       font-weight: bold;
@@ -56,9 +53,9 @@
     }
     input, select {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
+      font-size: 16px;
       margin-top: 5px;
-      box-sizing: border-box;
     }
     button {
       background: var(--accent);
@@ -67,34 +64,25 @@
       padding: 12px;
       border-radius: 5px;
       cursor: pointer;
-      margin-top: 15px;
       width: 100%;
+      margin-top: 15px;
       font-size: 16px;
-    }
-    button:hover {
-      background: var(--primary);
     }
     #resultado {
       margin-top: 30px;
-      background: var(--box);
+      background: #e9ecef;
       padding: 20px;
       border-radius: 5px;
     }
-    @media (max-width: 600px) {
-      .logo { max-height: 80px; }
-      body { font-size: 18px; }
-      h1 { font-size: 22px; }
+    canvas {
+      margin-top: 30px;
     }
   </style>
 </head>
 <body>
-  <button class="mode-toggle" onclick="toggleDarkMode()" title="Modo escuro">🌓</button>
-
-  <div style="text-align: center;">
-    <img src="sourev-logo.png" alt="Sourev Logo" class="logo" />
-    <h1>Simulador de Rentabilidade<br>Investimento SOUREV</h1>
-  </div>
-
+  <button class="mode-toggle" onclick="toggleDarkMode()">🌓</button>
+  <img src="sourev-logo.png" alt="Sourev Logo" class="logo" />
+  <h1>Simulador de Rentabilidade<br>Investimento SOUREV</h1>
 
   <label>Tipo de Operação:
     <select id="tipoOperacao" onchange="alternarCampos()">
@@ -125,119 +113,63 @@
   <button onclick="window.print()">📄 Exportar PDF</button>
 
   <div id="resultado"></div>
+  <canvas id="graficoCDI" width="400" height="250"></canvas>
 
   <script>
-  function toggleDarkMode() {
-    document.body.classList.toggle('dark');
-    localStorage.setItem("modo", document.body.classList.contains("dark") ? "dark" : "light");
-  }
-
-  if (localStorage.getItem("modo") === "dark") {
-    document.body.classList.add("dark");
-  }
-
-  function alternarCampos() {
-    const tipo = document.getElementById("tipoOperacao").value;
-    document.getElementById("camposSemJuros").style.display = tipo === "sem_juros" ? "block" : "none";
-    atualizarParcela();
-  }
-
-  function atualizarParcela() {
-    const tipo = document.getElementById("tipoOperacao").value;
-    const pv = parseFloat(document.getElementById("pv").value);
-    const n = parseInt(document.getElementById("n").value);
-    const juros = 0.045;
-
-    if (pv && n > 0) {
-      let parcela;
-      if (tipo === "com_juros") {
-        parcela = (pv * juros) / (1 - Math.pow(1 + juros, -n));
-      } else {
-        parcela = pv / n;
-      }
-      document.getElementById("pmt").value = parcela.toFixed(2);
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+      localStorage.setItem("modo", document.body.classList.contains("dark") ? "dark" : "light");
     }
-  }
-
-  function getSplitFundo(mdr) {
-    if (mdr === 15) return 0.50;
-    if (mdr === 20) return 0.46;
-    if (mdr === 25) return 0.45;
-    return 0.45;
-  }
-
-  function calcular() {
-    const tipo = document.getElementById("tipoOperacao").value;
-    const pv = parseFloat(document.getElementById("pv").value);
-    const n = parseInt(document.getElementById("n").value);
-    const pmt = parseFloat(document.getElementById("pmt").value);
-    const cdi = 0.0103;
-    let fluxo = [];
-    let entrada = 0;
-    let tir = 0.1;
-    let tipoOperacaoTexto = "";
-
-    if (tipo === "sem_juros") {
-      const mdr = parseFloat(document.getElementById("mdr").value);
-      const split = getSplitFundo(mdr);
-      const valorMDR = pv * (mdr / 100);
-      const valorFundo = valorMDR * split;
-      entrada = pv - valorFundo;
-      fluxo = [-entrada, ...Array(n).fill(pmt)];
-      tipoOperacaoTexto = "Sem Juros (MDR)";
-    } else {
-      entrada = pv;
-      fluxo = [-entrada, ...Array(n).fill(pmt)];
-      tipoOperacaoTexto = "Com Juros (4,5% a.m.)";
+    if (localStorage.getItem("modo") === "dark") {
+      document.body.classList.add("dark");
     }
 
-    for (let i = 0; i < 1000; i++) {
-      let f = 0, df = 0;
-      for (let t = 0; t < fluxo.length; t++) {
-        f += fluxo[t] / Math.pow(1 + tir, t);
-        df += -t * fluxo[t] / Math.pow(1 + tir, t + 1);
-      }
-      const tirNew = tir - f / df;
-      if (Math.abs(tirNew - tir) < 0.00001) break;
-      tir = tirNew;
-    }
-
-    const rentAnual = Math.pow(1 + tir, 12) - 1;
-    const totalRecebido = fluxo.slice(1).reduce((a, b) => a + b, 0);
-    const lucro = totalRecebido - entrada;
-    const retornoPercentual = (lucro / entrada) * 100;
-    const percentualCDI = (tir / cdi) * 100;
-    const comparativo = tir > cdi
-      ? `<span style='color:green'>✅ ${percentualCDI.toFixed(0)}% do CDI</span>`
-      : `<span style='color:orange'>⚠️ ${percentualCDI.toFixed(0)}% do CDI</span>`;
-
-    document.getElementById("resultado").innerHTML = `
-      <p><strong>📌 Tipo de Operação:</strong> ${tipoOperacaoTexto}</p>
-      <p><strong>Investimento líquido do fundo:</strong> R$ ${entrada.toFixed(2)}</p>
-      <p><strong>Valor total recebido:</strong> R$ ${totalRecebido.toFixed(2)}</p>
-      <p><strong>Lucro líquido:</strong> R$ ${lucro.toFixed(2)}</p>
-      <p><strong>Retorno percentual sobre a operação:</strong> ${retornoPercentual.toFixed(2)}%</p>
-      <p><strong>TIR mensal:</strong> ${(tir * 100).toFixed(2)}%</p>
-      <p><strong>Rentabilidade anual:</strong> ${(rentAnual * 100).toFixed(2)}%</p>
-      <p><strong>Comparativo com CDI:</strong> ${comparativo}</p>
-    `;
-
-    localStorage.setItem("simulador", JSON.stringify({ pv, n, pmt, tipo }));
-  }
-
-  window.onload = function () {
-    alternarCampos();
-    const dadosSalvos = localStorage.getItem("simulador");
-    if (dadosSalvos) {
-      const { pv, n, pmt, tipo } = JSON.parse(dadosSalvos);
-      document.getElementById("pv").value = pv;
-      document.getElementById("n").value = n;
-      document.getElementById("tipoOperacao").value = tipo || "sem_juros";
-      alternarCampos();
+    function alternarCampos() {
+      const tipo = document.getElementById("tipoOperacao").value;
+      document.getElementById("camposSemJuros").style.display = tipo === "sem_juros" ? "block" : "none";
       atualizarParcela();
     }
-  }
-</script>
-</body>
-</html>
 
+    function atualizarParcela() {
+      const tipo = document.getElementById("tipoOperacao").value;
+      const pv = parseFloat(document.getElementById("pv").value);
+      const n = parseInt(document.getElementById("n").value);
+      const juros = 0.045;
+      if (pv && n > 0) {
+        let parcela;
+        if (tipo === "com_juros") {
+          parcela = (pv * juros) / (1 - Math.pow(1 + juros, -n));
+        } else {
+          parcela = pv / n;
+        }
+        document.getElementById("pmt").value = parcela.toFixed(2);
+      }
+    }
+
+    function getSplitFundo(mdr) {
+      if (mdr === 15) return 0.50;
+      if (mdr === 20) return 0.46;
+      if (mdr === 25) return 0.45;
+      return 0.45;
+    }
+
+    let chartCDI = null;
+
+    function calcular() {
+      const tipo = document.getElementById("tipoOperacao").value;
+      const pv = parseFloat(document.getElementById("pv").value);
+      const n = parseInt(document.getElementById("n").value);
+      const pmt = parseFloat(document.getElementById("pmt").value);
+      const cdi = 0.0103;
+      let fluxo = [];
+      let entrada = 0;
+      let tir = 0.1;
+      let tipoOperacaoTexto = "";
+
+      if (tipo === "sem_juros") {
+        const mdr = parseFloat(document.getElementById("mdr").value);
+        const split = getSplitFundo(mdr);
+        const valorMDR = pv * (mdr / 100);
+        const valorFundo = valorMDR * split;
+        entrada = pv - valorFundo;
+        fluxo
