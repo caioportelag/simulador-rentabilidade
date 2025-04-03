@@ -74,6 +74,15 @@
       padding: 20px;
       border-radius: 5px;
     }
+    #alertaCDI {
+      background: #ffeaa7;
+      color: #2d3436;
+      padding: 12px;
+      border-radius: 5px;
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+    }
     canvas {
       margin-top: 30px;
     }
@@ -110,9 +119,11 @@
   </label>
 
   <button onclick="calcular()">Calcular</button>
+  <button onclick="exportarGrafico()">📤 Baixar Gráfico</button>
   <button onclick="window.print()">📄 Exportar PDF</button>
 
   <div id="resultado"></div>
+  <div id="alertaCDI"></div>
   <canvas id="graficoCDI" width="400" height="250"></canvas>
 
   <script>
@@ -120,7 +131,6 @@
       document.body.classList.toggle('dark');
       localStorage.setItem("modo", document.body.classList.contains("dark") ? "dark" : "light");
     }
-
     if (localStorage.getItem("modo") === "dark") {
       document.body.classList.add("dark");
     }
@@ -138,19 +148,10 @@
       const pv = parseFloat(document.getElementById("pv").value);
       const n = parseInt(document.getElementById("n").value);
       const juros = 0.045;
-      let parcela = 0;
-
-      if (!pv || !n || n <= 0) {
-        document.getElementById("pmt").value = '';
-        return;
-      }
-
-      if (tipo === "com_juros") {
-        parcela = (pv * juros) / (1 - Math.pow(1 + juros, -n));
-      } else {
-        parcela = pv / n;
-      }
-
+      if (!pv || !n || n <= 0) return;
+      let parcela = tipo === "com_juros"
+        ? (pv * juros) / (1 - Math.pow(1 + juros, -n))
+        : pv / n;
       document.getElementById("pmt").value = parcela.toFixed(2);
     }
 
@@ -186,7 +187,6 @@
         tipoOperacaoTexto = "Com Juros (4,5% a.m.)";
       }
 
-      // Calcular TIR
       for (let i = 0; i < 1000; i++) {
         let f = 0, df = 0;
         for (let t = 0; t < fluxo.length; t++) {
@@ -202,6 +202,7 @@
       const totalRecebido = fluxo.slice(1).reduce((a, b) => a + b, 0);
       const lucro = totalRecebido - entrada;
       const retornoPercentual = (lucro / entrada) * 100;
+      const comparativoCDI = (tir / cdi) * 100;
 
       document.getElementById("resultado").innerHTML = `
         <p><strong>📌 Tipo de Operação:</strong> ${tipoOperacaoTexto}</p>
@@ -211,9 +212,14 @@
         <p><strong>Retorno percentual sobre a operação:</strong> ${retornoPercentual.toFixed(2)}%</p>
         <p><strong>TIR mensal:</strong> ${(tir * 100).toFixed(2)}%</p>
         <p><strong>Rentabilidade anual:</strong> ${(rentAnual * 100).toFixed(2)}%</p>
+        <p><strong>💹 Rentabilidade em relação ao CDI:</strong> ${comparativoCDI.toFixed(2)}%</p>
       `;
 
-      // Gráfico de barras: CDI vs Operação
+      // Alerta
+      document.getElementById("alertaCDI").innerHTML =
+        `🚀 Esta operação rende <strong>${(tir / cdi).toFixed(2)}x</strong> o CDI mensal`;
+
+      // Gráfico
       const ctx = document.getElementById("graficoCDI").getContext("2d");
       if (chartCDI) chartCDI.destroy();
       chartCDI = new Chart(ctx, {
@@ -229,12 +235,17 @@
         options: {
           responsive: true,
           scales: {
-            y: {
-              beginAtZero: true
-            }
+            y: { beginAtZero: true }
           }
         }
       });
+    }
+
+    function exportarGrafico() {
+      const link = document.createElement('a');
+      link.download = 'grafico-rentabilidade.png';
+      link.href = document.getElementById('graficoCDI').toDataURL();
+      link.click();
     }
 
     document.getElementById("pv").addEventListener("input", calcularParcela);
