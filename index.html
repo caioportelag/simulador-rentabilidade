@@ -2,30 +2,95 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Simulador de Rentabilidade</title>
+  <title>Sourev | Simulador de Rentabilidade</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      max-width: 650px;
+      margin: 30px auto;
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #1d3557;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 25px;
+      background: #457b9d;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #1d3557;
+    }
+    #resultado {
+      margin-top: 30px;
+      background: #e9ecef;
+      padding: 20px;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
-  <h2>Simulador - Rentabilidade do Fundo</h2>
 
-  <label>Valor Emprestado: <input type="number" id="pv" value="1000"></label><br><br>
-  <label>Parcelas: <input type="number" id="n" value="3"></label><br><br>
-  <label>Valor Parcela: <input type="number" id="parcela" value="333.33"></label><br><br>
-  <label>MDR (%): <input type="number" id="mdr" value="20"></label><br><br>
-  <label>Split Fundo (%): <input type="number" id="split" value="46"></label><br><br>
+  <h1>Sourev | Simulador de Rentabilidade</h1>
+
+  <label>Valor Emprestado (R$):
+    <input type="number" id="pv" value="1000">
+  </label>
+
+  <label>Número de Parcelas:
+    <input type="number" id="n" value="3">
+  </label>
+
+  <label>Valor da Parcela (R$):
+    <input type="number" id="pmt" value="333.33">
+  </label>
+
+  <label>MDR (%):
+    <input type="number" id="mdr" value="20">
+  </label>
 
   <button onclick="calcular()">Calcular</button>
+
   <div id="resultado"></div>
 
   <script>
-    function calcular() {
-      const pv = parseFloat(document.getElementById("pv").value);
-      const n = parseInt(document.getElementById("n").value);
-      const pmt = parseFloat(document.getElementById("parcela").value);
-      const mdr = parseFloat(document.getElementById("mdr").value) / 100;
-      const split = parseFloat(document.getElementById("split").value) / 100;
+    function getSplitFundo(mdr) {
+      if (mdr === 15) return 0.50;
+      if (mdr === 20) return 0.46;
+      if (mdr === 25) return 0.45;
+      return 0.45; // padrão se valor diferente
+    }
 
-      const mdrValor = pv * mdr;
-      const entrada = pv - (mdrValor * split);
+    function calcular() {
+      const pv = parseFloat(document.getElementById('pv').value);
+      const n = parseInt(document.getElementById('n').value);
+      const pmt = parseFloat(document.getElementById('pmt').value);
+      const mdr = parseFloat(document.getElementById('mdr').value);
+
+      const split = getSplitFundo(mdr);
+      const valorMDR = pv * (mdr / 100);
+      const entrada = pv - (valorMDR * split);
 
       let fluxo = [-entrada];
       for (let i = 0; i < n; i++) fluxo.push(pmt);
@@ -42,14 +107,19 @@
         tir = tirNew;
       }
 
-      const anual = Math.pow(1 + tir, 12) - 1;
+      const rentAnual = Math.pow(1 + tir, 12) - 1;
       const lucro = fluxo.slice(1).reduce((a, b) => a + b, 0) - entrada;
+      const taxaMeta = 0.035;
+      const status = tir > taxaMeta
+        ? "<span style='color:green'>✅ Acima da meta</span>"
+        : "<span style='color:orange'>⚠️ Abaixo da meta</span>";
 
-      document.getElementById("resultado").innerHTML = `
-        <p>Investimento líquido: R$ ${entrada.toFixed(2)}</p>
-        <p>Lucro da operação: R$ ${lucro.toFixed(2)}</p>
-        <p>TIR mensal: ${(tir * 100).toFixed(2)}%</p>
-        <p>Rentabilidade anual: ${(anual * 100).toFixed(2)}%</p>
+      document.getElementById('resultado').innerHTML = `
+        <p><strong>Investimento líquido:</strong> R$ ${entrada.toFixed(2)}</p>
+        <p><strong>Lucro da operação:</strong> R$ ${lucro.toFixed(2)}</p>
+        <p><strong>TIR mensal:</strong> ${(tir * 100).toFixed(2)}%</p>
+        <p><strong>Rentabilidade anual:</strong> ${(rentAnual * 100).toFixed(2)}%</p>
+        <p><strong>Status:</strong> ${status}</p>
       `;
     }
   </script>
