@@ -91,22 +91,22 @@
     </select>
   </label>
 
-  <div id="camposSemJuros">
+  <div id="camposSemJuros" style="display: none;">
     <label>MDR (%):
-      <input type="number" id="mdr" />
+      <input type="number" id="mdr" value="15" />
     </label>
   </div>
 
   <label>Valor Emprestado (R$):
-    <input type="number" id="pv" oninput="atualizarParcela()" />
+    <input type="number" id="pv" />
   </label>
 
   <label>Número de Parcelas:
-    <input type="number" id="n" oninput="atualizarParcela()" />
+    <input type="number" id="n" />
   </label>
 
   <label>Valor da Parcela:
-    <input type="number" id="pmt" disabled />
+    <input type="text" id="pmt" readonly />
   </label>
 
   <button onclick="calcular()">Calcular</button>
@@ -120,30 +120,38 @@
       document.body.classList.toggle('dark');
       localStorage.setItem("modo", document.body.classList.contains("dark") ? "dark" : "light");
     }
+
     if (localStorage.getItem("modo") === "dark") {
       document.body.classList.add("dark");
     }
 
+    let chartCDI = null;
+
     function alternarCampos() {
       const tipo = document.getElementById("tipoOperacao").value;
       document.getElementById("camposSemJuros").style.display = tipo === "sem_juros" ? "block" : "none";
-      atualizarParcela();
+      calcularParcela();
     }
 
-    function atualizarParcela() {
+    function calcularParcela() {
       const tipo = document.getElementById("tipoOperacao").value;
       const pv = parseFloat(document.getElementById("pv").value);
       const n = parseInt(document.getElementById("n").value);
       const juros = 0.045;
-      if (pv && n > 0) {
-        let parcela;
-        if (tipo === "com_juros") {
-          parcela = (pv * juros) / (1 - Math.pow(1 + juros, -n));
-        } else {
-          parcela = pv / n;
-        }
-        document.getElementById("pmt").value = parcela.toFixed(2);
+      let parcela = 0;
+
+      if (!pv || !n || n <= 0) {
+        document.getElementById("pmt").value = '';
+        return;
       }
+
+      if (tipo === "com_juros") {
+        parcela = (pv * juros) / (1 - Math.pow(1 + juros, -n));
+      } else {
+        parcela = pv / n;
+      }
+
+      document.getElementById("pmt").value = parcela.toFixed(2);
     }
 
     function getSplitFundo(mdr) {
@@ -152,8 +160,6 @@
       if (mdr === 25) return 0.45;
       return 0.45;
     }
-
-    let chartCDI = null;
 
     function calcular() {
       const tipo = document.getElementById("tipoOperacao").value;
@@ -172,4 +178,68 @@
         const valorMDR = pv * (mdr / 100);
         const valorFundo = valorMDR * split;
         entrada = pv - valorFundo;
-        fluxo
+        fluxo = [-entrada, ...Array(n).fill(pmt)];
+        tipoOperacaoTexto = "Sem Juros (MDR)";
+      } else {
+        entrada = pv;
+        fluxo = [-entrada, ...Array(n).fill(pmt)];
+        tipoOperacaoTexto = "Com Juros (4,5% a.m.)";
+      }
+
+      // Calcular TIR
+      for (let i = 0; i < 1000; i++) {
+        let f = 0, df = 0;
+        for (let t = 0; t < fluxo.length; t++) {
+          f += fluxo[t] / Math.pow(1 + tir, t);
+          df += -t * fluxo[t] / Math.pow(1 + tir, t + 1);
+        }
+        const tirNew = tir - f / df;
+        if (Math.abs(tirNew - tir) < 0.00001) break;
+        tir = tirNew;
+      }
+
+      const rentAnual = Math.pow(1 + tir, 12) - 1;
+      const totalRecebido = fluxo.slice(1).reduce((a, b) => a + b, 0);
+      const lucro = totalRecebido - entrada;
+      const retornoPercentual = (lucro / entrada) * 100;
+
+      document.getElementById("resultado").innerHTML = `
+        <p><strong>📌 Tipo de Operação:</strong> ${tipoOperacaoTexto}</p>
+        <p><strong>Investimento líquido do fundo:</strong> R$ ${entrada.toFixed(2)}</p>
+        <p><strong>Valor total recebido:</strong> R$ ${totalRecebido.toFixed(2)}</p>
+        <p><strong>Lucro líquido:</strong> R$ ${lucro.toFixed(2)}</p>
+        <p><strong>Retorno percentual sobre a operação:</strong> ${retornoPercentual.toFixed(2)}%</p>
+        <p><strong>TIR mensal:</strong> ${(tir * 100).toFixed(2)}%</p>
+        <p><strong>Rentabilidade anual:</strong> ${(rentAnual * 100).toFixed(2)}%</p>
+      `;
+
+      // Gráfico de barras: CDI vs Operação
+      const ctx = document.getElementById("graficoCDI").getContext("2d");
+      if (chartCDI) chartCDI.destroy();
+      chartCDI = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['CDI', 'Operação'],
+          datasets: [{
+            label: 'Rentabilidade Mensal (%)',
+            data: [(cdi * 100).toFixed(2), (tir * 100).toFixed(2)],
+            backgroundColor: ['#fdcb6e', '#6c5ce7']
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById("pv").addEventListener("input", calcularParcela);
+    document.getElementById("n").addEventListener("input", calcularParcela);
+    window.onload = () => alternarCampos();
+  </script>
+</body>
+</html>
