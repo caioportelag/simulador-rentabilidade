@@ -25,14 +25,7 @@
       padding: 20px;
       position: relative;
     }
-    .top-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .top-bar img {
-      max-height: 80px;
-    }
+
     .mode-toggle {
       position: absolute;
       top: 20px;
@@ -46,23 +39,39 @@
       height: 32px;
       cursor: pointer;
     }
+
+    .logo {
+      display: block;
+      margin: 0 auto 10px auto;
+      max-height: 120px;
+    }
+
+    @media (max-width: 600px) {
+      .logo {
+        max-height: 80px;
+      }
+    }
+
     h1 {
       text-align: center;
       color: var(--primary);
       font-size: 20px;
-      margin-top: 10px;
+      margin-top: 0;
     }
+
     label {
       font-weight: bold;
       display: block;
       margin-top: 15px;
     }
+
     input {
       width: 100%;
       padding: 8px;
       margin-top: 5px;
       box-sizing: border-box;
     }
+
     button {
       background: var(--accent);
       color: white;
@@ -74,9 +83,11 @@
       width: 100%;
       font-size: 16px;
     }
+
     button:hover {
       background: var(--primary);
     }
+
     #resultado {
       margin-top: 30px;
       background: var(--box);
@@ -89,13 +100,10 @@
 
   <button class="mode-toggle" onclick="toggleDarkMode()" title="Modo escuro">🌓</button>
 
-  <div class="top-bar">
-    <img src="sourev-logo.png" alt="Sourev Logo" />
+  <div style="text-align: center;">
+    <img src="sourev-logo.png" alt="Sourev Logo" class="logo" />
+    <h1>Simulador de Rentabilidade<br>Investimento SOUREV</h1>
   </div>
-
-  <h1>
-    Simulador de Rentabilidade<br>Investimento SOUREV
-  </h1>
 
   <label>Valor Emprestado (R$):
     <input type="number" id="pv" oninput="atualizarParcela()" />
@@ -202,5 +210,3 @@
   </script>
 </body>
 </html>
-
-
