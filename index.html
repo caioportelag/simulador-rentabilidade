@@ -23,28 +23,34 @@
       max-width: 720px;
       margin: 0 auto;
       padding: 20px;
+      position: relative;
     }
     .top-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 20px;
     }
     .top-bar img {
       max-height: 80px;
     }
-    .top-bar button {
+    .mode-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: var(--accent);
+      color: white;
+      border: none;
       font-size: 14px;
-      padding: 4px 8px;
+      border-radius: 50%;
+      width: 32px;
       height: 32px;
-      border-radius: 4px;
+      cursor: pointer;
     }
     h1 {
-      color: var(--primary);
-      flex-grow: 1;
       text-align: center;
+      color: var(--primary);
       font-size: 20px;
-      margin: 0 10px;
+      margin-top: 10px;
     }
     label {
       font-weight: bold;
@@ -81,11 +87,15 @@
 </head>
 <body>
 
+  <button class="mode-toggle" onclick="toggleDarkMode()" title="Modo escuro">🌓</button>
+
   <div class="top-bar">
     <img src="sourev-logo.png" alt="Sourev Logo" />
-    <h1>Simulador de Rentabilidade<br>Investimento SOUREV</h1>
-    <button onclick="toggleDarkMode()" title="Modo Escuro">🌓</button>
   </div>
+
+  <h1>
+    Simulador de Rentabilidade<br>Investimento SOUREV
+  </h1>
 
   <label>Valor Emprestado (R$):
     <input type="number" id="pv" oninput="atualizarParcela()" />
@@ -192,4 +202,5 @@
   </script>
 </body>
 </html>
+
 
